@@ -7,38 +7,20 @@ interface Props {
   clips: { date: string; url: string; thumbnail: string }[];
 }
 
-async function shareVideo(url: string) {
-  // On mobile: fetch the file and share it directly
-  if (navigator.canShare && navigator.share) {
-    try {
-      const res = await fetch(url);
-      const blob = await res.blob();
-      const file = new File([blob], "clip.mp4", { type: "video/mp4" });
-      if (navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], title: "Clip" });
-        return;
-      }
-    } catch {
-      // fall through to URL share
-    }
-  }
-  // Fallback: share the URL
-  if (navigator.share) {
-    await navigator.share({ url });
-  }
-}
-
 function ShareButton({ url }: { url: string }) {
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const canShareFiles = typeof navigator !== "undefined" && !!navigator.canShare?.({ files: [new File([], "test.mp4", { type: "video/mp4" })] });
+  const isMobile = typeof navigator !== "undefined" && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
 
   async function handleClick() {
-    if (canShareFiles) {
+    if (isMobile && navigator.share) {
       setLoading(true);
       try {
-        await shareVideo(url);
+        const res = await fetch(url);
+        const blob = await res.blob();
+        const file = new File([blob], "clip.mp4", { type: "video/mp4" });
+        await navigator.share({ files: [file], title: "Clip" });
       } finally {
         setLoading(false);
       }
@@ -49,7 +31,7 @@ function ShareButton({ url }: { url: string }) {
     }
   }
 
-  const label = canShareFiles
+  const label = isMobile
     ? loading ? "Loading..." : "Share"
     : copied ? "Copied!" : "Copy Link";
 
@@ -57,7 +39,7 @@ function ShareButton({ url }: { url: string }) {
     <button
       onClick={handleClick}
       disabled={loading}
-      className="text-xs px-3 py-1 rounded bg-[#1a2a3a] text-[#4fc3f7] hover:bg-[#243a4a] transition-colors disabled:opacity-50"
+      className="text-xs px-3 py-1 rounded bg-[#1bb1ac26] text-[#1bb1ac] hover:bg-[#1bb1ac40] transition-colors disabled:opacity-50"
     >
       {label}
     </button>
@@ -71,7 +53,7 @@ export default function DayCard({ day, clips }: Props) {
     <div className="mb-4 border border-[#333] rounded-lg overflow-hidden">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between px-4 py-3 bg-[#1a1a1a] hover:bg-[#222] transition-colors text-left"
+        className="w-full flex items-center justify-between px-4 py-3 bg-[#0d3f3e] hover:bg-[#10504f] transition-colors text-left"
       >
         <span className="text-white font-semibold">{day}</span>
         <span className="flex items-center gap-3 text-sm text-[#aaa]">
@@ -99,7 +81,7 @@ export default function DayCard({ day, clips }: Props) {
                     <a
                       href={c.url}
                       download
-                      className="text-xs px-3 py-1 rounded bg-[#1a2a3a] text-[#4fc3f7] hover:bg-[#243a4a] transition-colors"
+                      className="text-xs px-3 py-1 rounded bg-[#1bb1ac26] text-[#1bb1ac] hover:bg-[#1bb1ac40] transition-colors"
                     >
                       Download
                     </a>
