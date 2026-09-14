@@ -1,3 +1,5 @@
+import DayCard from "./DayCard";
+
 interface Clip {
   id: string;
   court_name: string;
@@ -50,14 +52,7 @@ export default async function Page() {
         <p className="text-[#aaa]">(no results)</p>
       ) : (
         days.map((day) => (
-          <section key={day} className="mb-8">
-            <h2 className="text-white text-lg font-semibold border-b border-[#444] pb-1 mb-3">
-              {day} ({grouped[day].length} clips)
-            </h2>
-            <pre className="text-[#4fc3f7] text-sm whitespace-pre-wrap">
-              {grouped[day].map((c) => `${c.date}  ${c.url}`).join("\n")}
-            </pre>
-          </section>
+          <DayCard key={day} day={day} clips={grouped[day]} />
         ))
       )}
     </main>
