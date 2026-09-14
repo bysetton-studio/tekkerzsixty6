@@ -1,69 +1,65 @@
-import Image from "next/image";
+interface Clip {
+  id: string;
+  court_name: string;
+  clip_url: string;
+  captured_at: string;
+}
 
-export default function Home() {
+async function getClips(): Promise<Record<string, { date: string; url: string }[]>> {
+  const res = await fetch(
+    "https://klipr.live/api/clips?limit=8000&offset=0&sort=recent&venue_id=tekkerz",
+    { cache: "no-store" }
+  );
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+  const data = await res.json();
+  const clips: Clip[] = Array.isArray(data) ? data : data.clips ?? data.data ?? [];
+
+  const filtered = clips
+    .filter((c) => c.court_name === "Court 4 - Camera 0" && c.captured_at)
+    .filter((c) => new Date(c.captured_at).getDay() === 1) // Mondays only
+    .filter((c) => {
+      const hour = new Date(c.captured_at).getUTCHours();
+      return hour >= 19 && hour < 20; // 7–8pm UTC
+    });
+
+  const grouped: Record<string, { date: string; url: string }[]> = {};
+  for (const c of filtered) {
+    const day = c.captured_at.slice(0, 10);
+    if (!grouped[day]) grouped[day] = [];
+    grouped[day].push({ date: c.captured_at, url: c.clip_url });
+  }
+
+  return grouped;
+}
+
+export default async function Page() {
+  const grouped = await getClips();
+  const days = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+    <main className="min-h-screen bg-[#111] text-[#eee] font-mono p-8">
+      <h1 className="text-white text-2xl font-bold mb-2">Court 4 - Camera 0 Clips</h1>
+      <p className="text-[#aaa] mb-8">
+        {days.length === 0
+          ? "No clips found."
+          : `Found ${days.reduce((n, d) => n + grouped[d].length, 0)} clip(s) on Mondays 7–8pm UTC`}
+      </p>
+
+      {days.length === 0 ? (
+        <p className="text-[#aaa]">(no results)</p>
+      ) : (
+        days.map((day) => (
+          <section key={day} className="mb-8">
+            <h2 className="text-white text-lg font-semibold border-b border-[#444] pb-1 mb-3">
+              {day} ({grouped[day].length} clips)
+            </h2>
+            <pre className="text-[#4fc3f7] text-sm whitespace-pre-wrap">
+              {grouped[day].map((c) => `${c.date}  ${c.url}`).join("\n")}
+            </pre>
+          </section>
+        ))
+      )}
+    </main>
   );
 }

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Clip Fetcher</title>
+  <style>
+    body { font-family: monospace; padding: 2rem; background: #111; color: #eee; }
+    h1 { color: #fff; }
+    #status { color: #aaa; margin-bottom: 1rem; }
+    #results { white-space: pre-wrap; color: #4fc3f7; }
+    .error { color: #ef5350; }
+  </style>
+</head>
+<body>
+  <h1>Court 4 - Camera 0 Clips</h1>
+  <div id="status">Fetching...</div>
+  <div id="results"></div>
+
+  <script>
+    const status = document.getElementById('status');
+    const results = document.getElementById('results');
+
+    fetch('https://klipr.live/api/clips?limit=8000&offset=0&sort=recent&venue_id=tekkerz')
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
+      .then(data => {
+        const clips = Array.isArray(data) ? data : (data.clips || data.data || []);
+        const courtClips = clips.filter(c => c.court_name === 'Court 4 - Camera 0');
+
+        // Filter to Mondays only (day 1 = Monday)
+        const mondayClips = courtClips.filter(c => {
+          if (!c.captured_at) return false;
+          return new Date(c.captured_at).getDay() === 1;
+        });
+
+        // Filter to 7–8pm UTC
+        const eveningClips = mondayClips.filter(c => {
+          const hour = new Date(c.captured_at).getUTCHours();
+          return hour >= 19 && hour < 20;
+        });
+
+        status.textContent = `Found ${eveningClips.length} clip(s) on Mondays 7–8pm UTC for Court 4 - Camera 0`;
+
+        // Group by date (YYYY-MM-DD from captured_at)
+        const grouped = {};
+        for (const c of eveningClips) {
+          const day = c.captured_at.slice(0, 10);
+          if (!grouped[day]) grouped[day] = [];
+          grouped[day].push({ date: c.captured_at, url: c.clip_url });
+        }
+
+        // Sort days descending and build output
+        results.textContent = '';
+        const days = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
+
+        if (days.length === 0) {
+          results.textContent = '(no results)';
+        } else {
+          for (const day of days) {
+            const h2 = document.createElement('h2');
+            h2.style.cssText = 'color:#fff; margin: 1.5rem 0 0.5rem; border-bottom: 1px solid #444; padding-bottom: 0.25rem;';
+            h2.textContent = `${day} (${grouped[day].length} clips)`;
+            results.appendChild(h2);
+
+            const pre = document.createElement('pre');
+            pre.style.cssText = 'margin: 0; color: #4fc3f7;';
+            pre.textContent = grouped[day].map(c => `${c.date}  ${c.url}`).join('\n');
+            results.appendChild(pre);
+          }
+        }
+
+        console.log(grouped);
+      })
+      .catch(err => {
+        status.textContent = 'Error fetching clips.';
+        results.innerHTML = `<span class="error">${err.message}</span>`;
+        console.error(err);
+      });
+  </script>
+</body>
+</html>
