@@ -7,6 +7,63 @@ interface Props {
   clips: { date: string; url: string; thumbnail: string }[];
 }
 
+async function shareVideo(url: string) {
+  // On mobile: fetch the file and share it directly
+  if (navigator.canShare && navigator.share) {
+    try {
+      const res = await fetch(url);
+      const blob = await res.blob();
+      const file = new File([blob], "clip.mp4", { type: "video/mp4" });
+      if (navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: "Clip" });
+        return;
+      }
+    } catch {
+      // fall through to URL share
+    }
+  }
+  // Fallback: share the URL
+  if (navigator.share) {
+    await navigator.share({ url });
+  }
+}
+
+function ShareButton({ url }: { url: string }) {
+  const [loading, setLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const canShareFiles = typeof navigator !== "undefined" && !!navigator.canShare?.({ files: [new File([], "test.mp4", { type: "video/mp4" })] });
+
+  async function handleClick() {
+    if (canShareFiles) {
+      setLoading(true);
+      try {
+        await shareVideo(url);
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  }
+
+  const label = canShareFiles
+    ? loading ? "Loading..." : "Share"
+    : copied ? "Copied!" : "Copy Link";
+
+  return (
+    <button
+      onClick={handleClick}
+      disabled={loading}
+      className="text-xs px-3 py-1 rounded bg-[#1a2a3a] text-[#4fc3f7] hover:bg-[#243a4a] transition-colors disabled:opacity-50"
+    >
+      {label}
+    </button>
+  );
+}
+
 export default function DayCard({ day, clips }: Props) {
   const [open, setOpen] = useState(false);
 
@@ -38,12 +95,7 @@ export default function DayCard({ day, clips }: Props) {
                 <div className="flex items-center justify-between">
                   <span className="text-[#aaa] text-xs font-mono">{c.date.slice(11, 19)}</span>
                   <div className="flex gap-2">
-                    <button
-                      onClick={() => navigator.share({ url: c.url })}
-                      className="text-xs px-3 py-1 rounded bg-[#1a2a3a] text-[#4fc3f7] hover:bg-[#243a4a] transition-colors"
-                    >
-                      Share
-                    </button>
+                    <ShareButton url={c.url} />
                     <a
                       href={c.url}
                       download
