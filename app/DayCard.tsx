@@ -61,6 +61,14 @@ function ShareButton({ url }: { url: string }) {
   );
 }
 
+function formatDay(day: string) {
+  const today = new Date().toISOString().slice(0, 10);
+  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  if (day === today) return "Today";
+  if (day === yesterday) return "Yesterday";
+  return day;
+}
+
 export default function DayCard({ day, clips }: Props) {
   const [open, setOpen] = useState(false);
 
@@ -70,7 +78,7 @@ export default function DayCard({ day, clips }: Props) {
         onClick={() => setOpen((v) => !v)}
         className="w-full flex items-center justify-between px-4 py-3 bg-[#0d3f3e] hover:bg-[#10504f] transition-colors text-left"
       >
-        <span className="text-white font-semibold">{day}</span>
+        <span className="text-white font-semibold">{formatDay(day)}</span>
         <span className="flex items-center gap-3 text-sm text-[#aaa]">
           {clips.length} clips
 <span className={`transition-transform duration-200 ${open ? "rotate-180" : ""}`}>▼</span>
