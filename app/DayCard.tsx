@@ -4,7 +4,7 @@ import { useState } from "react";
 
 interface Props {
   day: string;
-  clips: { date: string; url: string }[];
+  clips: { date: string; url: string; thumbnail: string }[];
 }
 
 export default function DayCard({ day, clips }: Props) {
@@ -24,9 +24,39 @@ export default function DayCard({ day, clips }: Props) {
       </button>
 
       {open && (
-        <pre className="px-4 py-3 text-[#4fc3f7] text-sm whitespace-pre-wrap bg-[#111] border-t border-[#333]">
-          {clips.map((c) => `${c.date}  ${c.url}`).join("\n")}
-        </pre>
+        <div className="bg-[#111] border-t border-[#333] p-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {clips.map((c) => (
+              <div key={c.url} className="flex flex-col gap-1">
+                <video
+                  src={c.url}
+                  poster={c.thumbnail}
+                  controls
+                  preload="none"
+                  className="w-full rounded-lg bg-black aspect-video object-cover"
+                />
+                <div className="flex items-center justify-between">
+                  <span className="text-[#aaa] text-xs font-mono">{c.date.slice(11, 19)}</span>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => navigator.share({ url: c.url })}
+                      className="text-xs px-3 py-1 rounded bg-[#1a2a3a] text-[#4fc3f7] hover:bg-[#243a4a] transition-colors"
+                    >
+                      Share
+                    </button>
+                    <a
+                      href={c.url}
+                      download
+                      className="text-xs px-3 py-1 rounded bg-[#1a2a3a] text-[#4fc3f7] hover:bg-[#243a4a] transition-colors"
+                    >
+                      Download
+                    </a>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
     </div>
   );

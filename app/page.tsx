@@ -4,10 +4,11 @@ interface Clip {
   id: string;
   court_name: string;
   clip_url: string;
+  thumbnail_url: string;
   captured_at: string;
 }
 
-async function getClips(): Promise<Record<string, { date: string; url: string }[]>> {
+async function getClips(): Promise<Record<string, { date: string; url: string; thumbnail: string }[]>> {
   const res = await fetch(
     "https://klipr.live/api/clips?limit=8000&offset=0&sort=recent&venue_id=tekkerz",
     { cache: "no-store" }
@@ -25,11 +26,11 @@ async function getClips(): Promise<Record<string, { date: string; url: string }[
       return hour >= 19 && hour < 20; // 7–8pm UTC
     });
 
-  const grouped: Record<string, { date: string; url: string }[]> = {};
+  const grouped: Record<string, { date: string; url: string; thumbnail: string }[]> = {};
   for (const c of filtered) {
     const day = c.captured_at.slice(0, 10);
     if (!grouped[day]) grouped[day] = [];
-    grouped[day].push({ date: c.captured_at, url: c.clip_url });
+    grouped[day].push({ date: c.captured_at, url: c.clip_url, thumbnail: c.thumbnail_url });
   }
 
   return grouped;
