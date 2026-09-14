@@ -1,3 +1,4 @@
+import Image from "next/image";
 import DayCard from "./DayCard";
 
 interface Clip {
@@ -42,7 +43,10 @@ export default async function Page() {
 
   return (
     <main className="min-h-screen bg-[#111] text-[#eee] font-mono p-8">
-      <h1 className="text-white text-2xl font-bold mb-2">Court 4 - Camera 0 Clips</h1>
+      <div className="flex items-center gap-4 mb-2">
+        <Image src="/favcon.jpeg" alt="Logo" width={48} height={48} className="rounded-full" />
+        <h1 className="text-white text-2xl font-bold">Court 4</h1>
+      </div>
       <p className="text-[#aaa] mb-8">
         {days.length === 0
           ? "No clips found."
