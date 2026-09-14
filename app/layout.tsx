@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Court 4 - Camera 0 Clips",
+  title: "Court 4 Clips",
   description: "Tekkerz Monday night clips",
   icons: { icon: "/favcon.jpeg" },
 };

@@ -17,7 +17,7 @@ function ShareButton({ url }: { url: string }) {
     if (isMobile && navigator.share) {
       setLoading(true);
       try {
-        const res = await fetch(url);
+        const res = await fetch(`/api/video?url=${encodeURIComponent(url)}`);
         const blob = await res.blob();
         const file = new File([blob], "clip.mp4", { type: "video/mp4" });
         await navigator.share({ files: [file], title: "Clip" });

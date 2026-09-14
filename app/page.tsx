@@ -15,18 +15,18 @@ async function getClips(): Promise<Record<string, { date: string; url: string; t
     { cache: "no-store" }
   );
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
+  
   const data = await res.json();
   const clips: Clip[] = Array.isArray(data) ? data : data.clips ?? data.data ?? [];
-
+  
   const filtered = clips
-    .filter((c) => c.court_name === "Court 4 - Camera 0" && c.captured_at)
-    .filter((c) => new Date(c.captured_at).getDay() === 1) // Mondays only
-    .filter((c) => {
-      const hour = new Date(c.captured_at).getUTCHours();
-      return hour >= 19 && hour < 20; // 7–8pm UTC
-    });
-
+  .filter((c) => c.court_name?.startsWith("Court 4") && c.captured_at)
+  .filter((c) => new Date(c.captured_at).getDay() === 1) // Mondays only
+  .filter((c) => {
+    const hour = new Date(c.captured_at).getUTCHours();
+    return hour >= 19 && hour < 20; // 7–8pm UTC
+  });
+  
   const grouped: Record<string, { date: string; url: string; thumbnail: string }[]> = {};
   for (const c of filtered) {
     const day = c.captured_at.slice(0, 10);
