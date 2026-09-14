@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import LoadingOverlay from "./LoadingOverlay";
 
 interface Props {
   day: string;
@@ -10,19 +11,28 @@ interface Props {
 function ShareButton({ url }: { url: string }) {
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const abortRef = useRef<AbortController | null>(null);
 
-  const isMobile = typeof navigator !== "undefined" && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+  useEffect(() => {
+    setIsMobile(/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent));
+  }, []);
 
   async function handleClick() {
     if (isMobile && navigator.share) {
+      const controller = new AbortController();
+      abortRef.current = controller;
       setLoading(true);
       try {
-        const res = await fetch(`/api/video?url=${encodeURIComponent(url)}`);
+        const res = await fetch(`/api/video?url=${encodeURIComponent(url)}`, { signal: controller.signal });
         const blob = await res.blob();
         const file = new File([blob], "clip.mp4", { type: "video/mp4" });
         await navigator.share({ files: [file], title: "Clip" });
+      } catch (e: unknown) {
+        if (e instanceof Error && e.name !== "AbortError") throw e;
       } finally {
         setLoading(false);
+        abortRef.current = null;
       }
     } else {
       await navigator.clipboard.writeText(url);
@@ -31,18 +41,23 @@ function ShareButton({ url }: { url: string }) {
     }
   }
 
-  const label = isMobile
-    ? loading ? "Loading..." : "Share"
-    : copied ? "Copied!" : "Copy Link";
+  function handleCancel() {
+    abortRef.current?.abort();
+    setLoading(false);
+  }
+
+  const label = isMobile ? "Share" : copied ? "Copied!" : "Copy Link";
 
   return (
-    <button
-      onClick={handleClick}
-      disabled={loading}
-      className="text-xs px-3 py-1 rounded bg-[#1bb1ac26] text-[#1bb1ac] hover:bg-[#1bb1ac40] transition-colors disabled:opacity-50"
-    >
-      {label}
-    </button>
+    <>
+      {loading && <LoadingOverlay message="Preparing video..." onCancel={handleCancel} />}
+      <button
+        onClick={handleClick}
+        className="text-xs px-3 py-1 rounded bg-[#1bb1ac26] text-[#1bb1ac] hover:bg-[#1bb1ac40] transition-colors"
+      >
+        {label}
+      </button>
+    </>
   );
 }
 
@@ -58,7 +73,7 @@ export default function DayCard({ day, clips }: Props) {
         <span className="text-white font-semibold">{day}</span>
         <span className="flex items-center gap-3 text-sm text-[#aaa]">
           {clips.length} clips
-          <span className={`transition-transform duration-200 ${open ? "rotate-180" : ""}`}>▼</span>
+<span className={`transition-transform duration-200 ${open ? "rotate-180" : ""}`}>▼</span>
         </span>
       </button>
 
