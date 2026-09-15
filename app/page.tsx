@@ -81,7 +81,7 @@ export default async function Page() {
                 className="mb-4 border border-dashed border-[#333] rounded-lg px-4 py-3 flex items-center justify-between"
               >
                 <span className="text-[#555] font-semibold">{monday}</span>
-                <span className="text-[#444] text-sm">empty</span>
+                <span className="text-[#444] text-sm">No clips found</span>
               </div>
             )
           )}
