@@ -167,6 +167,12 @@ export default function TeamGenerator({ initialPlayers }: { initialPlayers: Play
     setTeamA((prev) => [...prev, player]);
   }
 
+  function removeFromTeam(player: Player) {
+    setTeamA((prev) => prev.filter((p) => p.id !== player.id));
+    setTeamB((prev) => prev.filter((p) => p.id !== player.id));
+    setSelected((prev) => { const s = new Set(prev); s.delete(player.id); return s; });
+  }
+
   // --- Import ---
   function handleParse() {
     const names = parseNames(importText);
@@ -196,11 +202,11 @@ export default function TeamGenerator({ initialPlayers }: { initialPlayers: Play
 
     for (let i = 0; i < importRows.length; i++) {
       const row = importRows[i];
-      if (row.action === "skip") continue;
+      const effectiveAction = row.action === "skip" ? "guest" : row.action;
 
       let player: Player | undefined;
 
-      if (row.action === "member") {
+      if (effectiveAction === "member") {
         // Save to KV and add to permanent list
         const res = await fetch("/api/players", {
           method: "POST",
@@ -211,15 +217,15 @@ export default function TeamGenerator({ initialPlayers }: { initialPlayers: Play
         currentPlayers = [...currentPlayers, newPlayer];
         setPlayers(currentPlayers);
         player = newPlayer;
-      } else if (row.action === "guest") {
+      } else if (effectiveAction === "guest") {
         // Temp player — session only, not saved to KV
         player = { id: `guest-${Date.now()}-${i}`, name: row.raw };
       } else if (row.matchedId) {
         player = currentPlayers.find((p) => p.id === row.matchedId);
       }
 
-      if (player && (row.action === "guest" || !selected.has(player.id))) {
-        if (row.action !== "guest") setSelected((prev) => new Set(prev).add(player!.id));
+      if (player && (effectiveAction === "guest" || !selected.has(player.id))) {
+        if (effectiveAction !== "guest") setSelected((prev) => new Set(prev).add(player!.id));
         if (aLen <= bLen) { setTeamA((prev) => [...prev, player!]); aLen++; }
         else { setTeamB((prev) => [...prev, player!]); bLen++; }
       }
@@ -282,7 +288,7 @@ export default function TeamGenerator({ initialPlayers }: { initialPlayers: Play
         {players.length === 0 ? (
           <p className="text-[#555] text-sm">No players yet.</p>
         ) : (
-          <ul className="flex flex-col gap-1 max-h-[240px] overflow-y-auto">
+          <ul className="flex flex-col gap-1 max-h-[240px] md:max-h-[calc(100vh-400px)] overflow-y-auto">
             {players.filter((p) => p.name.toLowerCase().includes(search.toLowerCase())).sort((a, b) => Number(selected.has(b.id)) - Number(selected.has(a.id))).map((p) => (
               <li
                 key={p.id}
@@ -339,7 +345,7 @@ export default function TeamGenerator({ initialPlayers }: { initialPlayers: Play
           <div className="flex flex-col items-center gap-3 border border-dashed border-[#333] rounded-lg px-6 py-10 text-center">
             <p className="text-[#555] text-sm">Paste a numbered list to auto-populate teams.</p>
             <button
-              onClick={() => { setShowImport(true); setImportRows(null); setImportText(""); }}
+              onClick={() => { setShowImport(true); setImportRows(null); setImportText(""); setTeamA([]); setTeamB([]); setSelected(new Set()); }}
               className="px-6 py-2 rounded bg-[#2a2a2a] text-[#aaa] hover:bg-[#333] hover:text-white transition-colors text-sm font-semibold"
             >
               Import signups
@@ -347,32 +353,32 @@ export default function TeamGenerator({ initialPlayers }: { initialPlayers: Play
           </div>
         ) : (
           <button
-            onClick={() => { setShowImport(true); setImportRows(null); setImportText(""); }}
-            className="text-xs px-2 py-1 md:px-4 md:py-1.5 rounded bg-[#2a2a2a] text-[#aaa] hover:bg-[#333] hover:text-white transition-colors w-full"
+            onClick={() => { setShowImport(true); setImportRows(null); setImportText(""); setTeamA([]); setTeamB([]); setSelected(new Set()); }}
+            className="text-xs px-2 py-1 md:px-4 md:py-1.5 rounded bg-[#2a2a2a] text-[#aaa] hover:bg-[#333] hover:text-white transition-colors w-full max-w-[160px]"
           >
             Import
           </button>
         )}
         {teamsGenerated && (
         <section className="border border-[#333] rounded-lg overflow-hidden w-full">
-          <div className="flex justify-center gap-2 px-4 py-2 border-b border-[#333]">
+          <div className="flex gap-2 px-4 py-2 border-b border-[#333]">
             <button
               onClick={handleShuffle}
-              className="text-xs px-4 py-1.5 rounded bg-[#2a2a2a] text-[#aaa] hover:bg-[#333] hover:text-white transition-colors flex-1"
+              className="text-xs px-4 py-1.5 rounded bg-[#2a2a2a] text-[#aaa] hover:bg-[#333] hover:text-white transition-colors flex-1 md:flex-none"
             >
               Shuffle
             </button>
             <button
               onClick={handleShare}
-              className="text-xs px-4 py-1.5 rounded bg-[#1bb1ac26] text-[#1bb1ac] hover:bg-[#1bb1ac40] transition-colors flex-1"
+              className="text-xs px-4 py-1.5 rounded bg-[#1bb1ac26] text-[#1bb1ac] hover:bg-[#1bb1ac40] transition-colors flex-1 md:flex-none"
             >
               {copied ? "Copied!" : "Share teams"}
             </button>
           </div>
 
           <div className="grid grid-cols-2">
-            <div className="bg-[#0d3f3e] px-4 py-2 flex items-center justify-between border-r border-[#333]">
-              <span className="text-[#1bb1ac] font-semibold text-sm">Team A</span>
+            <div className="bg-[#0d3f3e] px-4 py-2 flex items-center justify-end border-r border-[#333]">
+              <span className="text-[#1bb1ac] font-semibold text-sm text-right">Team A</span>
             </div>
             <div className="bg-[#1a2a3f] px-4 py-2 flex items-center justify-between">
               <span className="text-[#5599e0] font-semibold text-sm">Team B</span>
@@ -389,6 +395,10 @@ export default function TeamGenerator({ initialPlayers }: { initialPlayers: Play
                 >
                   <span className="hidden md:block flex-1 text-xs text-[#444] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity text-right">Switch team →</span>
                   <span className="text-sm text-[#eee] text-right break-words">{p.name}</span>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); removeFromTeam(p); }}
+                    className="text-[#444] hover:text-[#e05555] text-xs transition-colors cursor-pointer opacity-0 group-hover:opacity-100 shrink-0"
+                  >✕</button>
                 </li>
               ))}
             </ul>
@@ -399,6 +409,10 @@ export default function TeamGenerator({ initialPlayers }: { initialPlayers: Play
                   onClick={() => moveToA(p)}
                   className="group flex gap-2 items-center px-3 py-2 rounded bg-[#1a1a1a] cursor-pointer hover:bg-[#0a2e2d] transition-colors"
                 >
+                  <button
+                    onClick={(e) => { e.stopPropagation(); removeFromTeam(p); }}
+                    className="text-[#444] hover:text-[#e05555] text-xs transition-colors cursor-pointer opacity-0 group-hover:opacity-100 shrink-0"
+                  >✕</button>
                   <span className="text-sm text-[#eee] min-w-max text-left">{p.name}</span>
                   <span className="hidden md:block flex-1 text-xs text-[#444] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity text-left">← Switch team</span>
                 </li>
@@ -447,13 +461,28 @@ export default function TeamGenerator({ initialPlayers }: { initialPlayers: Play
             {!importRows ? (
               <>
                 <p className="text-[#aaa] text-sm">Paste the WhatsApp or message list below. Numbered entries will be extracted automatically.</p>
-                <textarea
-                  value={importText}
-                  onChange={(e) => setImportText(e.target.value)}
-                  placeholder={"Monday 7pm\n\n1. Theo\n2. Eli\n3. Damian..."}
-                  rows={10}
-                  className="w-full bg-[#111] border border-[#333] rounded px-3 py-2 text-sm text-white placeholder-[#555] focus:outline-none focus:border-[#1bb1ac] resize-none font-mono"
-                />
+                <div className="relative">
+                  <textarea
+                    value={importText}
+                    onChange={(e) => setImportText(e.target.value)}
+                    placeholder={"Monday 7pm\n\n1. Theo\n2. Eli\n3. Damian..."}
+                    rows={10}
+                    className="w-full bg-[#111] border border-[#333] rounded px-3 py-2 text-sm text-white placeholder-[#555] focus:outline-none focus:border-[#1bb1ac] resize-none font-mono"
+                  />
+                  {!importText && (
+                    <button
+                      onClick={async () => {
+                        try {
+                          const text = await navigator.clipboard.readText();
+                          setImportText(text);
+                        } catch {}
+                      }}
+                      className="absolute bottom-3 right-3 text-xs px-2 py-1 rounded bg-[#2a2a2a] text-[#aaa] hover:bg-[#333] hover:text-white transition-colors"
+                    >
+                      Paste
+                    </button>
+                  )}
+                </div>
                 <button
                   onClick={handleParse}
                   disabled={!importText.trim()}
