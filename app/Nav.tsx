@@ -18,7 +18,7 @@ export default function Nav() {
       <div className="max-w-5xl mx-auto">
       <div className="flex items-center gap-3 mb-3 md:mb-4">
         <Image src="/favcon.jpeg" alt="Logo" width={36} height={36} className="rounded-full" />
-        <span className="text-white text-lg md:text-xl font-bold font-sans">TEKKERS SIXY 60</span>
+        <span className="text-white text-lg md:text-xl font-bold font-sans">TEKKERZ SIXTY 60</span>
       </div>
       <nav className="flex gap-1 overflow-x-auto scrollbar-hide">
         {tabs.map((tab) => {
