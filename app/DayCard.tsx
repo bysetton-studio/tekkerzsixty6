@@ -22,49 +22,73 @@ function SaveButton({
 }) {
   const [savedId, setSavedId] = useState<string | null>(initialSavedId);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
+  const abortRef = useRef<AbortController | null>(null);
 
   async function handleSave() {
+    const controller = new AbortController();
+    abortRef.current = controller;
     setLoading(true);
+    setError(false);
     try {
       const res = await fetch("/api/favourites", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url, thumbnail, date }),
+        signal: controller.signal,
       });
+      if (!res.ok) { setError(true); return; }
       const { id } = await res.json();
       setSavedId(id);
+    } catch (e: unknown) {
+      if (e instanceof Error && e.name !== "AbortError") setError(true);
     } finally {
       setLoading(false);
+      abortRef.current = null;
     }
+  }
+
+  function handleCancelSave() {
+    abortRef.current?.abort();
+    setLoading(false);
   }
 
   async function handleUnsave() {
     if (!savedId) return;
     setLoading(true);
+    setError(false);
     try {
-      await fetch("/api/favourites", {
+      const res = await fetch("/api/favourites", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: savedId }),
       });
+      if (!res.ok) { setError(true); return; }
       setSavedId(null);
+    } catch {
+      setError(true);
     } finally {
       setLoading(false);
     }
   }
 
   return (
+    <>
+      {loading && <LoadingOverlay message="Saving to archive..." onCancel={handleCancelSave} />}
     <button
       onClick={savedId ? handleUnsave : handleSave}
       disabled={loading}
       className={`text-xs px-3 py-1 rounded transition-colors ${
-        savedId
+        error
+          ? "bg-[#3f1010] text-[#e05555] hover:bg-[#5a1a1a]"
+          : savedId
           ? "bg-[#1bb1ac40] text-[#1bb1ac] hover:bg-[#3f1010] hover:text-[#e05555]"
           : "bg-[#1bb1ac26] text-[#1bb1ac] hover:bg-[#1bb1ac40]"
       } disabled:opacity-50`}
     >
-      {loading ? "..." : savedId ? "★ Saved" : "Save"}
+      {loading ? "..." : error ? "Failed — retry?" : savedId ? "★ Saved" : "Save"}
     </button>
+    </>
   );
 }
 
