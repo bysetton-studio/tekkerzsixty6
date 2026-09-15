@@ -21,6 +21,14 @@ export async function POST(req: NextRequest) {
   return Response.json(newPlayer);
 }
 
+export async function PATCH(req: NextRequest) {
+  const { id, name } = await req.json();
+  const players = await kv.get<Player[]>(KEY) ?? [];
+  const updated = players.map((p) => p.id === id ? { ...p, name: name.trim() } : p);
+  await kv.set(KEY, updated);
+  return Response.json({ success: true });
+}
+
 export async function DELETE(req: NextRequest) {
   const { id } = await req.json();
   const players = await kv.get<Player[]>(KEY) ?? [];

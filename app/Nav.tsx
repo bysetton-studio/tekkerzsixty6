@@ -5,9 +5,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const tabs = [
+  { label: "Team Generator",  href: "/team-generator" },
   { label: "Clips",           href: "/" },
   { label: "★ Archive",       href: "/mega-highlights-archive" },
-  { label: "Team Generator",  href: "/team-generator" },
 ];
 
 export default function Nav() {
