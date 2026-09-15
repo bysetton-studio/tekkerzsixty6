@@ -78,6 +78,7 @@ export default async function Page() {
 
   return (
     <main className="min-h-screen bg-[#111] text-[#eee] p-4 md:p-8">
+      <div className="max-w-5xl mx-auto">
       <p className="text-[#aaa] mb-8">
         {days.length === 0
           ? "No clips found."
@@ -108,6 +109,7 @@ export default async function Page() {
             ))}
         </>
       )}
+      </div>
     </main>
   );
 }
