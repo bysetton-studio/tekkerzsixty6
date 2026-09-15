@@ -1,5 +1,3 @@
-import Image from "next/image";
-import Link from "next/link";
 import { list } from "@vercel/blob";
 import DayCard from "./DayCard";
 
@@ -80,15 +78,6 @@ export default async function Page() {
 
   return (
     <main className="min-h-screen bg-[#111] text-[#eee] font-mono p-8">
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-4">
-          <Image src="/favcon.jpeg" alt="Logo" width={48} height={48} className="rounded-full" />
-          <h1 className="text-white text-2xl font-bold">Court 4</h1>
-        </div>
-        <Link href="/mega-highlights-archive" className="text-xs px-3 py-1 rounded bg-[#1bb1ac26] text-[#1bb1ac] hover:bg-[#1bb1ac40] transition-colors">
-          ★ Mega Highlights Archive
-        </Link>
-      </div>
       <p className="text-[#aaa] mb-8">
         {days.length === 0
           ? "No clips found."

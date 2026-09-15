@@ -1,5 +1,4 @@
 import { list } from "@vercel/blob";
-import Link from "next/link";
 import FavouritesGrid from "./FavouritesGrid";
 
 const FREE_TIER_BYTES = 1 * 1024 * 1024 * 1024; // 1 GB Vercel Blob free tier
@@ -52,9 +51,6 @@ export default async function FavouritesPage() {
 
   return (
     <main className="min-h-screen bg-[#111] text-[#eee] font-mono p-8">
-      <div className="flex items-center gap-4 mb-2">
-        <Link href="/" className="text-[#1bb1ac] hover:underline text-sm">← Back</Link>
-      </div>
       <h1 className="text-white text-2xl font-bold mb-2">Mega Highlights Archive</h1>
       <p className="text-[#aaa] mb-6">
         {favourites.length === 0 ? "No saved clips yet." : `${favourites.length} saved clip(s)`}
