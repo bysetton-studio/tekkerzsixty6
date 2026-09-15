@@ -15,6 +15,7 @@ export default function Nav() {
 
   return (
     <header className="bg-[#111] border-b border-[#222] px-4 md:px-8 pt-4 md:pt-6 pb-0">
+      <div className="max-w-5xl mx-auto">
       <div className="flex items-center gap-3 mb-3 md:mb-4">
         <Image src="/favcon.jpeg" alt="Logo" width={36} height={36} className="rounded-full" />
         <span className="text-white text-lg md:text-xl font-bold font-sans">TEKKERS SIXY 60</span>
@@ -37,6 +38,7 @@ export default function Nav() {
           );
         })}
       </nav>
+      </div>
     </header>
   );
 }
