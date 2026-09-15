@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Tekkerz sixy 60",
+  title: "Tekkerz sixty 60",
   description: "Tekkerz Monday night clips",
   icons: { icon: "/favcon.jpeg" },
 };
