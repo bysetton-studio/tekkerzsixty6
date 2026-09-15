@@ -7,6 +7,16 @@ interface Player {
   name: string;
 }
 
+interface Game {
+  id: string;
+  createdAt: string;
+  status: "pending" | "completed";
+  teamA: Player[];
+  teamB: Player[];
+  scoreA: number | null;
+  scoreB: number | null;
+}
+
 type PatchAction = "matched" | "manual" | "member" | "guest" | "skip";
 
 interface ImportRow {
@@ -54,7 +64,7 @@ function autoMatch(raw: string, players: Player[]): Player | null {
   );
 }
 
-export default function TeamGenerator({ initialPlayers }: { initialPlayers: Player[] }) {
+export default function TeamGenerator({ initialPlayers, initialActiveGame }: { initialPlayers: Player[]; initialActiveGame?: Game | null }) {
   const [players, setPlayers] = useState<Player[]>(initialPlayers);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [teamA, setTeamA] = useState<Player[]>([]);
@@ -69,6 +79,14 @@ export default function TeamGenerator({ initialPlayers }: { initialPlayers: Play
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [copied, setCopied] = useState(false);
+
+  // Game state
+  const [activeGame, setActiveGame] = useState<Game | null>(initialActiveGame ?? null);
+  const [scoreA, setScoreA] = useState<string>(initialActiveGame?.scoreA?.toString() ?? "");
+  const [scoreB, setScoreB] = useState<string>(initialActiveGame?.scoreB?.toString() ?? "");
+  const [lockingGame, setLockingGame] = useState(false);
+  const [savingScore, setSavingScore] = useState(false);
+  const [editingGame, setEditingGame] = useState(false);
 
   // Import state
   const [showImport, setShowImport] = useState(false);
@@ -92,6 +110,67 @@ export default function TeamGenerator({ initialPlayers }: { initialPlayers: Play
     }
     setTeamA(all.filter((_, i) => i % 2 === 0));
     setTeamB(all.filter((_, i) => i % 2 !== 0));
+  }
+
+  async function handleLockGame() {
+    setLockingGame(true);
+    const res = await fetch("/api/games", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ teamA, teamB }),
+    });
+    const game: Game = await res.json();
+    setActiveGame(game);
+    setScoreA("");
+    setScoreB("");
+    setLockingGame(false);
+  }
+
+  async function handleUpdateGame() {
+    if (!activeGame) return;
+    setLockingGame(true);
+    await fetch("/api/games", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: activeGame.id, teamA, teamB, scoreA: activeGame.scoreA, scoreB: activeGame.scoreB, status: "pending" }),
+    });
+    setActiveGame({ ...activeGame, teamA, teamB });
+    setEditingGame(false);
+    setLockingGame(false);
+  }
+
+  async function handleSaveScore() {
+    if (!activeGame) return;
+    setSavingScore(true);
+    await fetch("/api/games", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: activeGame.id,
+        scoreA: scoreA !== "" ? Number(scoreA) : null,
+        scoreB: scoreB !== "" ? Number(scoreB) : null,
+        status: "completed",
+      }),
+    });
+    setActiveGame(null);
+    setTeamA([]);
+    setTeamB([]);
+    setSelected(new Set());
+    setScoreA("");
+    setScoreB("");
+    setSavingScore(false);
+  }
+
+  async function handleCancelGame() {
+    if (!activeGame) return;
+    await fetch("/api/games", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: activeGame.id }),
+    });
+    setActiveGame(null);
+    setScoreA("");
+    setScoreB("");
   }
 
   async function handleShare() {
@@ -403,7 +482,7 @@ export default function TeamGenerator({ initialPlayers }: { initialPlayers: Play
             Import
           </button>
         )}
-        {teamsGenerated && (
+        {teamsGenerated && !activeGame && (
         <section className="border border-[#333] rounded-lg overflow-hidden w-full">
           <div className="flex gap-2 px-4 py-2 border-b border-[#333]">
             <button
@@ -417,6 +496,13 @@ export default function TeamGenerator({ initialPlayers }: { initialPlayers: Play
               className="text-xs px-4 py-1.5 rounded bg-[#1bb1ac26] text-[#1bb1ac] hover:bg-[#1bb1ac40] transition-colors flex-1 md:flex-none"
             >
               {copied ? "Copied!" : "Share teams"}
+            </button>
+            <button
+              onClick={handleLockGame}
+              disabled={lockingGame}
+              className="text-xs px-4 py-1.5 rounded bg-[#1bb1ac] text-black font-semibold hover:bg-[#17a09b] transition-colors flex-1 md:flex-none disabled:opacity-50"
+            >
+              {lockingGame ? "Locking..." : "Lock in game"}
             </button>
           </div>
 
@@ -462,6 +548,150 @@ export default function TeamGenerator({ initialPlayers }: { initialPlayers: Play
                 </li>
               ))}
             </ul>
+          </div>
+        </section>
+        )}
+
+        {/* Pending game — edit mode */}
+        {activeGame && editingGame && (
+        <section className="border border-[#333] rounded-lg overflow-hidden w-full">
+          <div className="flex gap-2 px-4 py-2 border-b border-[#333]">
+            <button
+              onClick={handleShuffle}
+              className="text-xs px-4 py-1.5 rounded bg-[#2a2a2a] text-[#aaa] hover:bg-[#333] hover:text-white transition-colors flex-1 md:flex-none"
+            >
+              Shuffle
+            </button>
+            <button
+              onClick={handleUpdateGame}
+              disabled={lockingGame}
+              className="text-xs px-4 py-1.5 rounded bg-[#1bb1ac] text-black font-semibold hover:bg-[#17a09b] transition-colors flex-1 md:flex-none disabled:opacity-50"
+            >
+              {lockingGame ? "Saving..." : "Save game"}
+            </button>
+            <button
+              onClick={() => { setEditingGame(false); setTeamA(activeGame.teamA); setTeamB(activeGame.teamB); }}
+              className="text-xs px-4 py-1.5 rounded bg-[#2a2a2a] text-[#555] hover:text-[#aaa] transition-colors flex-1 md:flex-none"
+            >
+              Cancel
+            </button>
+          </div>
+
+          <div className="grid grid-cols-2">
+            <div className="bg-[#0d3f3e] px-4 py-2 flex items-center justify-end border-r border-[#333]">
+              <span className="text-[#1bb1ac] font-semibold text-sm text-right">Team A</span>
+            </div>
+            <div className="bg-[#1a2a3f] px-4 py-2">
+              <span className="text-[#5599e0] font-semibold text-sm">Team B</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 divide-x divide-[#333]">
+            <ul className="p-3 flex flex-col gap-1">
+              {teamA.map((p) => (
+                <li key={p.id} onClick={() => moveToB(p)} className="group flex gap-2 items-center justify-end px-3 py-2 rounded bg-[#1a1a1a] cursor-pointer hover:bg-[#1a2a3f] transition-colors">
+                  <span className="hidden md:block flex-1 text-xs text-[#444] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity text-right">Switch team →</span>
+                  <span className="text-sm text-[#eee] text-right break-words">{p.name}</span>
+                  <button onClick={(e) => { e.stopPropagation(); removeFromTeam(p); }} className="text-[#444] hover:text-[#e05555] text-xs transition-colors cursor-pointer opacity-0 group-hover:opacity-100 shrink-0">✕</button>
+                </li>
+              ))}
+            </ul>
+            <ul className="p-3 flex flex-col gap-1">
+              {teamB.map((p) => (
+                <li key={p.id} onClick={() => moveToA(p)} className="group flex gap-2 items-center px-3 py-2 rounded bg-[#1a1a1a] cursor-pointer hover:bg-[#0a2e2d] transition-colors">
+                  <button onClick={(e) => { e.stopPropagation(); removeFromTeam(p); }} className="text-[#444] hover:text-[#e05555] text-xs transition-colors cursor-pointer opacity-0 group-hover:opacity-100 shrink-0">✕</button>
+                  <span className="text-sm text-[#eee] min-w-max text-left">{p.name}</span>
+                  <span className="hidden md:block flex-1 text-xs text-[#444] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity text-left">← Switch team</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+        )}
+
+        {/* Pending game — locked view */}
+        {activeGame && !editingGame && (
+        <section className="border border-[#1bb1ac40] rounded-lg overflow-hidden w-full">
+          <div className="flex items-center justify-between px-4 py-2 border-b border-[#1bb1ac40] bg-[#0d3f3e]">
+            <span className="text-[#1bb1ac] text-sm font-semibold">Game locked in</span>
+            <div className="flex items-center gap-3">
+              <span className="text-[#555] text-xs">{new Date(activeGame.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+              <button
+                onClick={() => { setEditingGame(true); setTeamA(activeGame.teamA); setTeamB(activeGame.teamB); }}
+                className="text-xs px-2 py-0.5 rounded bg-[#2a2a2a] text-[#aaa] hover:bg-[#333] hover:text-white transition-colors"
+              >
+                Edit
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2">
+            <div className="bg-[#0d3f3e80] px-4 py-2 flex items-center justify-end border-r border-[#333]">
+              <span className="text-[#1bb1ac] font-semibold text-sm">Team A</span>
+            </div>
+            <div className="bg-[#1a2a3f80] px-4 py-2">
+              <span className="text-[#5599e0] font-semibold text-sm">Team B</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 divide-x divide-[#333]">
+            <ul className="p-3 flex flex-col gap-1">
+              {activeGame.teamA.map((p) => (
+                <li key={p.id} className="flex items-center justify-end px-3 py-1.5">
+                  <span className="text-sm text-[#eee] text-right">{p.name}</span>
+                </li>
+              ))}
+            </ul>
+            <ul className="p-3 flex flex-col gap-1">
+              {activeGame.teamB.map((p) => (
+                <li key={p.id} className="flex items-center px-3 py-1.5">
+                  <span className="text-sm text-[#eee]">{p.name}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="border-t border-[#333] p-4 flex flex-col gap-4">
+            <p className="text-[#aaa] text-xs">Enter the final scores</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-[#1bb1ac]">Team A</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={scoreA}
+                  onChange={(e) => setScoreA(e.target.value)}
+                  placeholder="0"
+                  className="bg-[#1a1a1a] border border-[#333] rounded px-3 py-2 text-white text-lg font-bold text-center focus:outline-none focus:border-[#1bb1ac]"
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-[#5599e0]">Team B</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={scoreB}
+                  onChange={(e) => setScoreB(e.target.value)}
+                  placeholder="0"
+                  className="bg-[#1a1a1a] border border-[#333] rounded px-3 py-2 text-white text-lg font-bold text-center focus:outline-none focus:border-[#5599e0]"
+                />
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={handleSaveScore}
+                disabled={savingScore}
+                className="flex-1 py-2 rounded bg-[#1bb1ac] text-black text-sm font-semibold hover:bg-[#17a09b] transition-colors disabled:opacity-50"
+              >
+                {savingScore ? "Saving..." : "Save result"}
+              </button>
+              <button
+                onClick={handleCancelGame}
+                className="px-4 py-2 rounded bg-[#2a2a2a] text-[#555] hover:text-[#aaa] transition-colors text-sm"
+              >
+                Cancel game
+              </button>
+            </div>
           </div>
         </section>
         )}
@@ -521,9 +751,10 @@ export default function TeamGenerator({ initialPlayers }: { initialPlayers: Play
                           setImportText(text);
                         } catch {}
                       }}
-                      className="absolute bottom-3 right-3 text-xs px-2 py-1 rounded bg-[#2a2a2a] text-[#aaa] hover:bg-[#333] hover:text-white transition-colors"
+                      className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-[#444] hover:text-[#aaa] transition-colors"
                     >
-                      Paste
+                      <span className="text-3xl">⎘</span>
+                      <span className="text-sm font-semibold">Tap to paste</span>
                     </button>
                   )}
                 </div>
