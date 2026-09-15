@@ -140,7 +140,7 @@ export default function FavouritesGrid({ initialFavourites }: { initialFavourite
         />
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
         {items.map((item) => (
           <div key={item.id} className="flex flex-col gap-2 border border-[#333] rounded-lg overflow-hidden">
             <video

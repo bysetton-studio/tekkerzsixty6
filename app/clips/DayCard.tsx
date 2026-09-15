@@ -86,7 +86,7 @@ function SaveButton({
           : "bg-[#1bb1ac26] text-[#1bb1ac] hover:bg-[#1bb1ac40]"
       } disabled:opacity-50`}
     >
-      {loading ? "..." : error ? "Failed — retry?" : savedId ? "★ Saved" : "Save"}
+      {loading ? "..." : error ? "Failed — retry?" : savedId ? "★ Saved" : "★ Make All Star"}
     </button>
     </>
   );
@@ -171,7 +171,7 @@ export default function DayCard({ day, clips, savedMap }: Props) {
 
       {open && (
         <div className="bg-[#111] border-t border-[#333] p-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 gap-y-10">
             {clips.map((c) => (
               <div key={c.url} className="flex flex-col gap-1">
                 <video
@@ -184,20 +184,21 @@ export default function DayCard({ day, clips, savedMap }: Props) {
                 <div className="flex items-center justify-between">
                   <span className="text-[#aaa] text-xs font-mono">{c.date.slice(11, 19)}</span>
                   <div className="flex gap-2">
+                    <ShareButton url={c.url} />
+                    <a
+                      href={c.url}
+                      download
+                      className="text-xs px-3 py-1 rounded bg-[#1bb1ac26] text-[#1bb1ac] hover:bg-[#1bb1ac40] transition-colors"
+                      title="Download"
+                    >
+                      ↓
+                    </a>
                     <SaveButton
                       url={c.url}
                       thumbnail={c.thumbnail}
                       date={c.date}
                       initialSavedId={savedMap[c.url] ?? null}
                     />
-                    <ShareButton url={c.url} />
-                    <a
-                      href={c.url}
-                      download
-                      className="text-xs px-3 py-1 rounded bg-[#1bb1ac26] text-[#1bb1ac] hover:bg-[#1bb1ac40] transition-colors"
-                    >
-                      Download
-                    </a>
                   </div>
                 </div>
               </div>
