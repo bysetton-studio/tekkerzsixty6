@@ -1,4 +1,6 @@
 import Image from "next/image";
+import Link from "next/link";
+import { list } from "@vercel/blob";
 import DayCard from "./DayCard";
 
 interface Clip {
@@ -37,6 +39,25 @@ async function getClips(): Promise<Record<string, { date: string; url: string; t
   return grouped;
 }
 
+async function getSavedMap(): Promise<Record<string, string>> {
+  try {
+    const { blobs } = await list({ prefix: "favourites/meta/" });
+    if (blobs.length === 0) return {};
+    const items = await Promise.all(
+      blobs.map(async (blob) => {
+        const res = await fetch(blob.url, {
+          headers: { Authorization: `Bearer ${process.env.BLOB_READ_WRITE_TOKEN}` },
+          cache: "no-store",
+        });
+        return res.json() as Promise<{ id: string; originalUrl: string }>;
+      })
+    );
+    return Object.fromEntries(items.map((item) => [item.originalUrl, item.id]));
+  } catch {
+    return {};
+  }
+}
+
 function getLastThreeMondays(): string[] {
   const mondays: string[] = [];
   const d = new Date();
@@ -52,15 +73,20 @@ function getLastThreeMondays(): string[] {
 }
 
 export default async function Page() {
-  const grouped = await getClips();
+  const [grouped, savedMap] = await Promise.all([getClips(), getSavedMap()]);
   const days = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
   const lastThreeMondays = getLastThreeMondays();
 
   return (
     <main className="min-h-screen bg-[#111] text-[#eee] font-mono p-8">
-      <div className="flex items-center gap-4 mb-2">
-        <Image src="/favcon.jpeg" alt="Logo" width={48} height={48} className="rounded-full" />
-        <h1 className="text-white text-2xl font-bold">Court 4</h1>
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-4">
+          <Image src="/favcon.jpeg" alt="Logo" width={48} height={48} className="rounded-full" />
+          <h1 className="text-white text-2xl font-bold">Court 4</h1>
+        </div>
+        <Link href="/mega-highlights-archive" className="text-xs px-3 py-1 rounded bg-[#1bb1ac26] text-[#1bb1ac] hover:bg-[#1bb1ac40] transition-colors">
+          ★ Mega Highlights Archive
+        </Link>
       </div>
       <p className="text-[#aaa] mb-8">
         {days.length === 0
@@ -74,7 +100,7 @@ export default async function Page() {
         <>
           {lastThreeMondays.map((monday) =>
             grouped[monday] ? (
-              <DayCard key={monday} day={monday} clips={grouped[monday]} />
+              <DayCard key={monday} day={monday} clips={grouped[monday]} savedMap={savedMap} />
             ) : (
               <div
                 key={monday}
@@ -88,7 +114,7 @@ export default async function Page() {
           {days
             .filter((d) => !lastThreeMondays.includes(d))
             .map((day) => (
-              <DayCard key={day} day={day} clips={grouped[day]} />
+              <DayCard key={day} day={day} clips={grouped[day]} savedMap={savedMap} />
             ))}
         </>
       )}

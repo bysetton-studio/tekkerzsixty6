@@ -6,6 +6,66 @@ import LoadingOverlay from "./LoadingOverlay";
 interface Props {
   day: string;
   clips: { date: string; url: string; thumbnail: string }[];
+  savedMap: Record<string, string>; // originalUrl -> saved id
+}
+
+function SaveButton({
+  url,
+  thumbnail,
+  date,
+  initialSavedId,
+}: {
+  url: string;
+  thumbnail: string;
+  date: string;
+  initialSavedId: string | null;
+}) {
+  const [savedId, setSavedId] = useState<string | null>(initialSavedId);
+  const [loading, setLoading] = useState(false);
+
+  async function handleSave() {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/favourites", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url, thumbnail, date }),
+      });
+      const { id } = await res.json();
+      setSavedId(id);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleUnsave() {
+    if (!savedId) return;
+    setLoading(true);
+    try {
+      await fetch("/api/favourites", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: savedId }),
+      });
+      setSavedId(null);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <button
+      onClick={savedId ? handleUnsave : handleSave}
+      disabled={loading}
+      className={`text-xs px-3 py-1 rounded transition-colors ${
+        savedId
+          ? "bg-[#1bb1ac40] text-[#1bb1ac] hover:bg-[#3f1010] hover:text-[#e05555]"
+          : "bg-[#1bb1ac26] text-[#1bb1ac] hover:bg-[#1bb1ac40]"
+      } disabled:opacity-50`}
+    >
+      {loading ? "..." : savedId ? "★ Saved" : "Save"}
+    </button>
+  );
 }
 
 function ShareButton({ url }: { url: string }) {
@@ -69,7 +129,7 @@ function formatDay(day: string) {
   return day;
 }
 
-export default function DayCard({ day, clips }: Props) {
+export default function DayCard({ day, clips, savedMap }: Props) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -81,7 +141,7 @@ export default function DayCard({ day, clips }: Props) {
         <span className="text-white font-semibold">{formatDay(day)}</span>
         <span className="flex items-center gap-3 text-sm text-[#aaa]">
           {clips.length} clips
-<span className={`transition-transform duration-200 ${open ? "rotate-180" : ""}`}>▼</span>
+          <span className={`transition-transform duration-200 ${open ? "rotate-180" : ""}`}>▼</span>
         </span>
       </button>
 
@@ -100,6 +160,12 @@ export default function DayCard({ day, clips }: Props) {
                 <div className="flex items-center justify-between">
                   <span className="text-[#aaa] text-xs font-mono">{c.date.slice(11, 19)}</span>
                   <div className="flex gap-2">
+                    <SaveButton
+                      url={c.url}
+                      thumbnail={c.thumbnail}
+                      date={c.date}
+                      initialSavedId={savedMap[c.url] ?? null}
+                    />
                     <ShareButton url={c.url} />
                     <a
                       href={c.url}
