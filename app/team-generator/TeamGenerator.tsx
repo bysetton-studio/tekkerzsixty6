@@ -62,6 +62,8 @@ export default function TeamGenerator({ initialPlayers }: { initialPlayers: Play
   const [newName, setNewName] = useState("");
   const [adding, setAdding] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showGuestForm, setShowGuestForm] = useState(false);
+  const [guestName, setGuestName] = useState("");
   const [search, setSearch] = useState("");
   const [confirmRemove, setConfirmRemove] = useState<Player | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -117,6 +119,16 @@ export default function TeamGenerator({ initialPlayers }: { initialPlayers: Play
     setNewName("");
     setAdding(false);
     setShowAddForm(false);
+  }
+
+  function handleAddGuest(e: React.FormEvent) {
+    e.preventDefault();
+    if (!guestName.trim()) return;
+    const guest: Player = { id: `guest-${Date.now()}`, name: guestName.trim() };
+    if (teamA.length <= teamB.length) setTeamA((prev) => [...prev, guest]);
+    else setTeamB((prev) => [...prev, guest]);
+    setGuestName("");
+    setShowGuestForm(false);
   }
 
   async function handleRenamePlayer(id: string, name: string) {
@@ -249,13 +261,38 @@ export default function TeamGenerator({ initialPlayers }: { initialPlayers: Play
           <h2 className="text-white font-semibold">Members</h2>
           <div className="flex gap-2">
             <button
-              onClick={() => { setShowAddForm((v) => !v); setTimeout(() => inputRef.current?.focus(), 50); }}
+              onClick={() => { setShowGuestForm((v) => !v); setShowAddForm(false); }}
+              className="text-xs px-3 py-1 rounded bg-[#3a2a0a] text-[#e0a855] hover:bg-[#4a3a0a] transition-colors"
+            >
+              {showGuestForm ? "Cancel" : "+ Guest"}
+            </button>
+            <button
+              onClick={() => { setShowAddForm((v) => !v); setShowGuestForm(false); setTimeout(() => inputRef.current?.focus(), 50); }}
               className="text-xs px-3 py-1 rounded bg-[#1bb1ac26] text-[#1bb1ac] hover:bg-[#1bb1ac40] transition-colors"
             >
               {showAddForm ? "Cancel" : "+ Add"}
             </button>
           </div>
         </div>
+
+        {showGuestForm && (
+          <form onSubmit={handleAddGuest} className="flex gap-2 mb-4">
+            <input
+              autoFocus
+              value={guestName}
+              onChange={(e) => setGuestName(e.target.value)}
+              placeholder="Guest name"
+              className="flex-1 bg-[#1a1a1a] border border-[#444] rounded px-3 py-2 text-sm text-white placeholder-[#555] focus:outline-none focus:border-[#e0a855]"
+            />
+            <button
+              type="submit"
+              disabled={!guestName.trim()}
+              className="px-4 py-2 rounded bg-[#3a2a0a] text-[#e0a855] text-sm font-semibold hover:bg-[#4a3a0a] transition-colors disabled:opacity-40"
+            >
+              Add
+            </button>
+          </form>
+        )}
 
         {showAddForm && (
           <form onSubmit={(e) => { handleAddPlayer(e); setShowAddForm(false); }} className="flex gap-2 mb-4">
@@ -315,8 +352,15 @@ export default function TeamGenerator({ initialPlayers }: { initialPlayers: Play
                         type="checkbox"
                         checked={selected.has(p.id)}
                         onChange={() => toggleSelect(p.id)}
-                        className="accent-[#1bb1ac] w-4 h-4 cursor-pointer"
+                        className="sr-only"
                       />
+                      <span className={`w-4 h-4 rounded shrink-0 border transition-colors ${selected.has(p.id) ? "bg-[#1bb1ac60] border-[#1bb1ac80]" : "border-[#444] bg-transparent"}`}>
+                        {selected.has(p.id) && (
+                          <svg viewBox="0 0 12 12" fill="none" className="w-full h-full p-0.5">
+                            <path d="M2 6l3 3 5-5" stroke="#1bb1ac" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        )}
+                      </span>
                       <span className="text-sm text-[#eee]">{p.name}</span>
                     </label>
                     <button
