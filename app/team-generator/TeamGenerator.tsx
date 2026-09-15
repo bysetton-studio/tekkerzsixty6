@@ -14,8 +14,28 @@ export default function TeamGenerator({ initialPlayers }: { initialPlayers: Play
   const [teamB, setTeamB] = useState<Player[]>([]);
   const [newName, setNewName] = useState("");
   const [adding, setAdding] = useState(false);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [search, setSearch] = useState("");
   const [confirmRemove, setConfirmRemove] = useState<Player | null>(null);
+  const [copied, setCopied] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  function buildShareText() {
+    const a = teamA.map((p) => `  • ${p.name}`).join("\n");
+    const b = teamB.map((p) => `  • ${p.name}`).join("\n");
+    return `⚽ Team A\n${a}\n\n⚽ Team B\n${b}`;
+  }
+
+  async function handleShare() {
+    const text = buildShareText();
+    if (navigator.share) {
+      await navigator.share({ title: "Teams", text });
+    } else {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  }
 
   async function handleAddPlayer(e: React.FormEvent) {
     e.preventDefault();
@@ -30,7 +50,7 @@ export default function TeamGenerator({ initialPlayers }: { initialPlayers: Play
     setPlayers((prev) => [...prev, player]);
     setNewName("");
     setAdding(false);
-    inputRef.current?.focus();
+    setShowAddForm(false);
   }
 
   async function handleRemovePlayer(id: string) {
@@ -46,18 +66,16 @@ export default function TeamGenerator({ initialPlayers }: { initialPlayers: Play
   }
 
   function toggleSelect(id: string) {
-    setSelected((prev) => {
-      const s = new Set(prev);
-      s.has(id) ? s.delete(id) : s.add(id);
-      return s;
-    });
-  }
-
-  function handleGenerate() {
-    const pool = players.filter((p) => selected.has(p.id));
-    const shuffled = [...pool].sort(() => Math.random() - 0.5);
-    setTeamA(shuffled.filter((_, i) => i % 2 === 0));
-    setTeamB(shuffled.filter((_, i) => i % 2 === 1));
+    const player = players.find((p) => p.id === id)!;
+    if (selected.has(id)) {
+      setSelected((prev) => { const s = new Set(prev); s.delete(id); return s; });
+      setTeamA((prev) => prev.filter((p) => p.id !== id));
+      setTeamB((prev) => prev.filter((p) => p.id !== id));
+    } else {
+      setSelected((prev) => new Set(prev).add(id));
+      if (teamA.length <= teamB.length) setTeamA((prev) => [...prev, player]);
+      else setTeamB((prev) => [...prev, player]);
+    }
   }
 
   function moveToB(player: Player) {
@@ -73,34 +91,54 @@ export default function TeamGenerator({ initialPlayers }: { initialPlayers: Play
   const teamsGenerated = teamA.length > 0 || teamB.length > 0;
 
   return (
-    <div className="flex flex-row-reverse gap-8 items-start">
+    <div className="flex flex-col md:flex-row-reverse gap-8 items-start">
 
-      {/* Add player */}
-      <section className="w-72 shrink-0">
-        <h2 className="text-white font-semibold mb-3">Players</h2>
-        <form onSubmit={handleAddPlayer} className="flex gap-2 mb-4">
-          <input
-            ref={inputRef}
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            placeholder="Player name"
-            className="flex-1 bg-[#1a1a1a] border border-[#333] rounded px-3 py-2 text-sm text-white placeholder-[#555] focus:outline-none focus:border-[#1bb1ac]"
-          />
+      {/* Players section */}
+      <section className="w-full md:w-72 md:shrink-0">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-white font-semibold">Players</h2>
           <button
-            type="submit"
-            disabled={adding || !newName.trim()}
-            className="px-4 py-2 rounded bg-[#1bb1ac] text-black text-sm font-semibold hover:bg-[#17a09b] transition-colors disabled:opacity-40"
+            onClick={() => { setShowAddForm((v) => !v); setTimeout(() => inputRef.current?.focus(), 50); }}
+            className="text-xs px-3 py-1 rounded bg-[#1bb1ac26] text-[#1bb1ac] hover:bg-[#1bb1ac40] transition-colors"
           >
-            Add
+            {showAddForm ? "Cancel" : "+ Add new member"}
           </button>
-        </form>
+        </div>
+
+        {showAddForm && (
+          <form onSubmit={(e) => { handleAddPlayer(e); setShowAddForm(false); }} className="flex gap-2 mb-4">
+            <input
+              ref={inputRef}
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              placeholder="Player name"
+              className="flex-1 bg-[#1a1a1a] border border-[#333] rounded px-3 py-2 text-sm text-white placeholder-[#555] focus:outline-none focus:border-[#1bb1ac]"
+            />
+            <button
+              type="submit"
+              disabled={adding || !newName.trim()}
+              className="px-4 py-2 rounded bg-[#1bb1ac] text-black text-sm font-semibold hover:bg-[#17a09b] transition-colors disabled:opacity-40"
+            >
+              Add
+            </button>
+          </form>
+        )}
+
+        {players.length > 0 && (
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search players..."
+            className="w-full bg-[#1a1a1a] border border-[#333] rounded px-3 py-2 text-sm text-white placeholder-[#555] focus:outline-none focus:border-[#1bb1ac] mb-3"
+          />
+        )}
 
         {/* Player list with checkboxes */}
         {players.length === 0 ? (
           <p className="text-[#555] text-sm">No players yet.</p>
         ) : (
           <ul className="flex flex-col gap-1">
-            {players.map((p) => (
+            {players.filter((p) => p.name.toLowerCase().includes(search.toLowerCase())).map((p) => (
               <li
                 key={p.id}
                 className="flex items-center justify-between px-3 py-2 rounded bg-[#1a1a1a] border border-[#222] hover:border-[#333] transition-colors"
@@ -125,28 +163,27 @@ export default function TeamGenerator({ initialPlayers }: { initialPlayers: Play
           </ul>
         )}
 
-        {selected.size >= 2 && (
-          <button
-            onClick={handleGenerate}
-            className="mt-4 px-5 py-2 rounded bg-[#0d3f3e] border border-[#1bb1ac40] text-[#1bb1ac] text-sm font-semibold hover:bg-[#10504f] transition-colors"
-          >
-            {teamsGenerated ? "Re-generate Teams" : "Generate Teams"} ({selected.size} players)
-          </button>
-        )}
       </section>
 
       {/* Teams */}
       {teamsGenerated && (
-        <section className="border border-[#333] rounded-lg overflow-hidden flex-1">
+        <section className="border border-[#333] rounded-lg overflow-hidden flex-1 w-full">
+          <div className="flex justify-center px-4 py-2 border-b border-[#333]">
+            <button
+              onClick={handleShare}
+              className="text-xs px-4 py-1.5 rounded bg-[#1bb1ac26] text-[#1bb1ac] hover:bg-[#1bb1ac40] transition-colors w-[60%]"
+            >
+              {copied ? "Copied!" : "Share teams"}
+            </button>
+          </div>
+
           {/* Headers */}
           <div className="grid grid-cols-2">
             <div className="bg-[#0d3f3e] px-4 py-2 flex items-center justify-between border-r border-[#333]">
               <span className="text-[#1bb1ac] font-semibold text-sm">Team A</span>
-              <span className="text-[#aaa] text-xs">{teamA.length} players</span>
             </div>
             <div className="bg-[#1a2a3f] px-4 py-2 flex items-center justify-between">
               <span className="text-[#5599e0] font-semibold text-sm">Team B</span>
-              <span className="text-[#aaa] text-xs">{teamB.length} players</span>
             </div>
           </div>
 
@@ -157,10 +194,10 @@ export default function TeamGenerator({ initialPlayers }: { initialPlayers: Play
                 <li
                   key={p.id}
                   onClick={() => moveToB(p)}
-                  className="group flex gap-2 items-center px-3 py-2 rounded bg-[#1a1a1a] cursor-pointer hover:bg-[#1a2a3f] transition-colors"
+                  className="group flex gap-2 items-center justify-end px-3 py-2 rounded bg-[#1a1a1a] cursor-pointer hover:bg-[#1a2a3f] transition-colors"
                 >
-                  <span className="text-xs text-[#444] ml-3 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity w-full text-right">Switch team →</span>
-                  <span className="text-sm text-[#eee] flex-1 text-right">{p.name}</span>
+                  <span className="hidden md:block flex-1 text-xs text-[#444] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity text-right">Switch team →</span>
+                  <span className="text-sm text-[#eee] min-w-max text-right">{p.name}</span>
                 </li>
               ))}
             </ul>
@@ -171,8 +208,8 @@ export default function TeamGenerator({ initialPlayers }: { initialPlayers: Play
                   onClick={() => moveToA(p)}
                   className="group flex gap-2 items-center px-3 py-2 rounded bg-[#1a1a1a] cursor-pointer hover:bg-[#0a2e2d] transition-colors"
                 >
-                  <span className="text-sm text-[#eee] flex-1 text-left">{p.name}</span>
-                  <span className="text-xs text-[#444] mr-3 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity w-full text-left">← Switch team</span>
+                  <span className="text-sm text-[#eee] min-w-max text-left">{p.name}</span>
+                  <span className="hidden md:block flex-1 text-xs text-[#444] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity text-left">← Switch team</span>
                 </li>
               ))}
             </ul>

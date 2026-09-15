@@ -50,7 +50,7 @@ export default async function FavouritesPage() {
   const color = pct > 90 ? "#e05555" : pct > 70 ? "#e0a855" : "#1bb1ac";
 
   return (
-    <main className="min-h-screen bg-[#111] text-[#eee] font-mono p-8">
+    <main className="min-h-screen bg-[#111] text-[#eee] font-mono p-4 md:p-8">
       <h1 className="text-white text-2xl font-bold mb-2">Mega Highlights Archive</h1>
       <p className="text-[#aaa] mb-6">
         {favourites.length === 0 ? "No saved clips yet." : `${favourites.length} saved clip(s)`}
