@@ -37,9 +37,24 @@ async function getClips(): Promise<Record<string, { date: string; url: string; t
   return grouped;
 }
 
+function getLastThreeMondays(): string[] {
+  const mondays: string[] = [];
+  const d = new Date();
+  // Walk backwards to find the most recent Monday (or today if Monday)
+  const dayOfWeek = d.getDay(); // 0=Sun,1=Mon,...
+  const daysToLastMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+  d.setDate(d.getDate() - daysToLastMonday);
+  for (let i = 0; i < 3; i++) {
+    mondays.push(d.toISOString().slice(0, 10));
+    d.setDate(d.getDate() - 7);
+  }
+  return mondays;
+}
+
 export default async function Page() {
   const grouped = await getClips();
   const days = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
+  const lastThreeMondays = getLastThreeMondays();
 
   return (
     <main className="min-h-screen bg-[#111] text-[#eee] font-mono p-8">
@@ -53,12 +68,29 @@ export default async function Page() {
           : `Found ${days.reduce((n, d) => n + grouped[d].length, 0)} clip(s) on Mondays 7–8pm UTC`}
       </p>
 
-      {days.length === 0 ? (
+      {days.length === 0 && lastThreeMondays.every((m) => !grouped[m]) ? (
         <p className="text-[#aaa]">(no results)</p>
       ) : (
-        days.map((day) => (
-          <DayCard key={day} day={day} clips={grouped[day]} />
-        ))
+        <>
+          {lastThreeMondays.map((monday) =>
+            grouped[monday] ? (
+              <DayCard key={monday} day={monday} clips={grouped[monday]} />
+            ) : (
+              <div
+                key={monday}
+                className="mb-4 border border-dashed border-[#333] rounded-lg px-4 py-3 flex items-center justify-between"
+              >
+                <span className="text-[#555] font-semibold">{monday}</span>
+                <span className="text-[#444] text-sm">empty</span>
+              </div>
+            )
+          )}
+          {days
+            .filter((d) => !lastThreeMondays.includes(d))
+            .map((day) => (
+              <DayCard key={day} day={day} clips={grouped[day]} />
+            ))}
+        </>
       )}
     </main>
   );
