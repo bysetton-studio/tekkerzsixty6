@@ -74,7 +74,7 @@ function SaveButton({
 
   return (
     <>
-      {loading && <LoadingOverlay message="Saving to archive..." onCancel={handleCancelSave} />}
+      {loading && <LoadingOverlay message="Saving to All Star..." onCancel={handleCancelSave} />}
     <button
       onClick={savedId ? handleUnsave : handleSave}
       disabled={loading}

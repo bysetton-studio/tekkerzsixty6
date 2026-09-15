@@ -35,7 +35,7 @@ function DeleteModal({
           <>
             <h2 className="text-white text-lg font-bold">Are you sure?</h2>
             <p className="text-[#aaa] text-sm">
-              This clip will be permanently removed from your Mega Highlights Archive. There is no undo.
+              This clip will be permanently removed from your All Star highlights. There is no undo.
             </p>
             <div className="flex gap-3">
               <button
