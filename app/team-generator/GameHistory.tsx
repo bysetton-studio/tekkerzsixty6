@@ -19,8 +19,7 @@ interface Game {
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString(undefined, {
-    weekday: "short", day: "numeric", month: "short", year: "numeric",
-    hour: "2-digit", minute: "2-digit",
+    weekday: "short", day: "numeric", month: "short", year: "numeric"
   });
 }
 

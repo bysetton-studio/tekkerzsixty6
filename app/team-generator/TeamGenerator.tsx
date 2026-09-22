@@ -99,7 +99,7 @@ export default function TeamGenerator({ initialPlayers, initialActiveGame }: { i
   function buildShareText() {
     const a = teamA.map((p) => `  • ${p.name}`).join("\n");
     const b = teamB.map((p) => `  • ${p.name}`).join("\n");
-    return `⚽ Team A\n${a}\n\n⚽ Team B\n${b}`;
+    return `🟢 Team A\n${a}\n\n🔵 Team B\n${b}`;
   }
 
   function handleShuffle() {
