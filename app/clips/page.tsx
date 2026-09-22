@@ -77,7 +77,7 @@ export default async function Page() {
   const lastThreeMondays = getLastThreeMondays();
 
   return (
-    <main className="min-h-screen bg-[#111] text-[#eee] p-4 md:p-8">
+    <main className="bg-[#111] text-[#eee] p-4 md:p-8">
       <div className="max-w-5xl mx-auto">
       <p className="text-[#aaa] mb-8">
         {days.length === 0

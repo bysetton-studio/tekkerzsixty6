@@ -404,11 +404,12 @@ export default function TeamGenerator({ initialPlayers, initialActiveGame }: { i
         {players.length === 0 ? (
           <p className="text-[#555] text-sm">No players yet.</p>
         ) : (
-          <ul className="flex flex-col gap-1 max-h-[240px] md:max-h-[calc(100vh-400px)] overflow-y-auto">
+          <div className="max-h-60 md:max-h-[calc(100vh-400px)] overflow-y-auto">
+          <ul className="space-y-1">
             {players.filter((p) => p.name.toLowerCase().includes(search.toLowerCase())).sort((a, b) => Number(selected.has(b.id)) - Number(selected.has(a.id))).map((p) => (
               <li
                 key={p.id}
-                className="flex items-center justify-between px-3 py-2 rounded bg-[#1a1a1a] border border-[#222] hover:border-[#333] transition-colors"
+                className="relative flex items-center justify-between px-3 py-2 rounded bg-[#1a1a1a] border border-[#222] hover:border-[#333] transition-colors"
               >
                 {editingId === p.id ? (
                   <form
@@ -459,6 +460,7 @@ export default function TeamGenerator({ initialPlayers, initialActiveGame }: { i
               </li>
             ))}
           </ul>
+          </div>
         )}
       </section>
 
