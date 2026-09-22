@@ -28,11 +28,11 @@ function ResultBadge({ scoreA, scoreB }: { scoreA: number | null; scoreB: number
   const winner = scoreA > scoreB ? "A" : scoreB > scoreA ? "B" : null;
   return (
     <div className="flex items-center gap-2 text-sm font-bold">
-      <span className={scoreA > scoreB ? "text-[#1bb1ac]" : "text-[#aaa]"}>{scoreA}</span>
+      <span className={scoreA > scoreB ? "text-rose-400" : "text-[#aaa]"}>{scoreA}</span>
       <span className="text-[#444]">–</span>
       <span className={scoreB > scoreA ? "text-[#5599e0]" : "text-[#aaa]"}>{scoreB}</span>
       {winner && (
-        <span className={`text-xs font-normal px-1.5 py-0.5 rounded ${winner === "A" ? "bg-[#0d3f3e] text-[#1bb1ac]" : "bg-[#1a2a3f] text-[#5599e0]"}`}>
+        <span className={`text-xs font-normal px-1.5 py-0.5 rounded ${winner === "A" ? "bg-rose-950 text-rose-400" : "bg-[#1a2a3f] text-[#5599e0]"}`}>
           Team {winner} wins
         </span>
       )}
@@ -51,6 +51,7 @@ async function deleteGame(id: string) {
 
 export default function GameHistory({ games }: { games: Game[] }) {
   const [items, setItems] = useState([...games].filter((g) => g.status === "completed").reverse());
+  const [confirmDelete, setConfirmDelete] = useState<Game | null>(null);
   const completed = items;
 
   if (completed.length === 0) {
@@ -71,10 +72,7 @@ export default function GameHistory({ games }: { games: Game[] }) {
             <div className="flex items-center gap-3">
               <ResultBadge scoreA={game.scoreA} scoreB={game.scoreB} />
               <button
-                onClick={async () => {
-                  await deleteGame(game.id);
-                  setItems((prev) => prev.filter((g) => g.id !== game.id));
-                }}
+                onClick={() => setConfirmDelete(game)}
                 className="text-[#444] hover:text-[#e05555] text-xs transition-colors cursor-pointer"
                 title="Remove game"
               >
@@ -84,7 +82,7 @@ export default function GameHistory({ games }: { games: Game[] }) {
           </div>
           <div className="grid grid-cols-2 divide-x divide-[#333]">
             <div className="p-3">
-              <p className="text-xs text-[#1bb1ac] font-semibold mb-2">Team A</p>
+              <p className="text-xs text-rose-400 font-semibold mb-2">Team A</p>
               <ul className="flex flex-col gap-1">
                 {game.teamA.map((p) => (
                   <li key={p.id} className="text-sm text-[#eee]">{p.name}</li>
@@ -102,6 +100,36 @@ export default function GameHistory({ games }: { games: Game[] }) {
           </div>
         </div>
       ))}
+
+      {confirmDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="flex flex-col gap-4 p-6 rounded-2xl bg-[#1a1a1a] border border-[#333] max-w-sm w-full">
+            <h2 className="text-white font-bold">Remove game?</h2>
+            <p className="text-[#aaa] text-sm">
+              Are you sure you want to remove this game from{" "}
+              <span className="text-white">{formatDate(confirmDelete.createdAt)}</span>?
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={async () => {
+                  await deleteGame(confirmDelete.id);
+                  setItems((prev) => prev.filter((g) => g.id !== confirmDelete.id));
+                  setConfirmDelete(null);
+                }}
+                className="flex-1 py-2 rounded-lg bg-[#3f1010] text-[#e05555] hover:bg-[#5a1a1a] transition-colors text-sm"
+              >
+                Remove
+              </button>
+              <button
+                onClick={() => setConfirmDelete(null)}
+                className="flex-1 py-2 rounded-lg bg-[#2a2a2a] text-[#aaa] hover:bg-[#333] hover:text-white transition-colors text-sm"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
