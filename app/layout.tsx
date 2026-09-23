@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Geist_Mono } from "next/font/google";
 import Nav from "./Nav";
+import PageTransition from "./PageTransition";
 import "./globals.css";
 
 const inter = Inter({
@@ -29,7 +30,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-screen flex flex-col bg-[#111]">
         <Nav />
-        {children}
+        <PageTransition>{children}</PageTransition>
       </body>
     </html>
   );
