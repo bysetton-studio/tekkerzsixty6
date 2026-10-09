@@ -97,8 +97,8 @@ export default function TeamGenerator({ initialPlayers, initialActiveGame }: { i
   const inputRef = useRef<HTMLInputElement>(null);
 
   function buildShareText() {
-    const a = teamA.map((p) => `  • ${p.name}`).join("\n");
-    const b = teamB.map((p) => `  • ${p.name}`).join("\n");
+    const a = (activeGame?.teamA ?? teamA).map((p) => `  • ${p.name}`).join("\n");
+    const b = (activeGame?.teamB ?? teamB).map((p) => `  • ${p.name}`).join("\n");
     return `🟢 Team A\n${a}\n\n🔵 Team B\n${b}`;
   }
 
@@ -618,6 +618,12 @@ export default function TeamGenerator({ initialPlayers, initialActiveGame }: { i
             <span className="text-[#1bb1ac] text-sm font-semibold">Game locked in</span>
             <div className="flex items-center gap-3">
               <span className="text-[#555] text-xs">{new Date(activeGame.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+              <button
+                onClick={handleShare}
+                className="text-xs px-2 py-0.5 rounded bg-[#1bb1ac26] text-[#1bb1ac] hover:bg-[#1bb1ac40] transition-colors"
+              >
+                {copied ? "Copied!" : "Share"}
+              </button>
               <button
                 onClick={() => { setEditingGame(true); setTeamA(activeGame.teamA); setTeamB(activeGame.teamB); }}
                 className="text-xs px-2 py-0.5 rounded bg-[#2a2a2a] text-[#aaa] hover:bg-[#333] hover:text-white transition-colors"
