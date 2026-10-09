@@ -1,5 +1,8 @@
 import { list } from "@vercel/blob";
+import { kv } from "@vercel/kv";
 import DayCard from "./DayCard";
+import CourtBadge from "../team-generator/CourtBadge";
+import TimeBadge from "./TimeBadge";
 
 interface Clip {
   id: string;
@@ -9,24 +12,34 @@ interface Clip {
   captured_at: string;
 }
 
-async function getClips(): Promise<Record<string, { date: string; url: string; thumbnail: string }[]>> {
-  const res = await fetch(
-    "https://klipr.live/api/clips?limit=8000&offset=0&sort=recent&venue_id=tekkerz",
-    { cache: "no-store" }
-  );
+async function getClips(court: string, time: string): Promise<Record<string, { date: string; url: string; thumbnail: string }[]>> {
+  const apiUrl = "https://klipr.live/api/clips?limit=8000&offset=0&sort=recent&venue_id=tekkerz";
+  console.log("[clips] API request URL:", apiUrl);
+
+  const res = await fetch(apiUrl, { cache: "no-store" });
+  console.log("[clips] API response status:", res.status, res.statusText);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  
+
   const data = await res.json();
   const clips: Clip[] = Array.isArray(data) ? data : data.clips ?? data.data ?? [];
 
-  const filtered = clips
-  .filter((c) => c.court_name?.startsWith("Court 4") && c.captured_at)
-  .filter((c) => new Date(c.captured_at).getDay() === 1) // Mondays only
-  .filter((c) => {
-    const hour = new Date(c.captured_at).getUTCHours();
-    return hour >= 17 && hour < 18; // 5–6pm UTC
-  });
+  // Normalise court: "4" → "Court 4", "Court 4" → "Court 4"
+  const courtPrefix = court
+  ? court.toLowerCase().startsWith("court") ? court : `Court ${court}`
+  : null;
   
+  // Normalise time: "17" or "17:00" → 17
+  const utcHour = time ? parseInt(time, 10) - 2 : null;
+
+  const filtered = clips
+    .filter((c) => (courtPrefix ? c.court_name?.startsWith(courtPrefix) : true) && c.captured_at)
+    .filter((c) => new Date(c.captured_at).getDay() === 1) // Mondays only
+    .filter((c) => {
+      if (utcHour === null || isNaN(utcHour)) return true;
+      const hour = new Date(c.captured_at).getUTCHours();
+      return hour >= utcHour && hour < utcHour + 1;
+    });
+
   const grouped: Record<string, { date: string; url: string; thumbnail: string }[]> = {};
   for (const c of filtered) {
     const day = c.captured_at.slice(0, 10);
@@ -60,8 +73,7 @@ async function getSavedMap(): Promise<Record<string, string>> {
 function getLastThreeMondays(): string[] {
   const mondays: string[] = [];
   const d = new Date();
-  // Walk backwards to find the most recent Monday (or today if Monday)
-  const dayOfWeek = d.getDay(); // 0=Sun,1=Mon,...
+  const dayOfWeek = d.getDay();
   const daysToLastMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
   d.setDate(d.getDate() - daysToLastMonday);
   for (let i = 0; i < 3; i++) {
@@ -72,22 +84,35 @@ function getLastThreeMondays(): string[] {
 }
 
 export default async function Page() {
-  const [grouped, savedMap] = await Promise.all([getClips(), getSavedMap()]);
+  const [court, time] = await Promise.all([
+    kv.get("court").then((c) => (c != null ? String(c) : "")),
+    kv.get("cliptime").then((t) => (t != null ? String(t) : "")),
+  ]);
+
+  const [grouped, savedMap] = await Promise.all([getClips(court, time), getSavedMap()]);
   const days = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
   const lastThreeMondays = getLastThreeMondays();
+
+  const courtLabel = court
+    ? court.toLowerCase().startsWith("court") ? court : `Court ${court}`
+    : null;
+  const timeLabel = time && !isNaN(parseInt(time, 10)) ? `${time}:00 UTC` : null;
 
   return (
     <main className="bg-[#111] text-[#eee] p-4 md:p-8">
       <div className="max-w-5xl mx-auto">
-      <p className="text-[#aaa] mb-8">
-        {days.length === 0
-          ? "No clips found."
-          : `Found ${days.reduce((n, d) => n + grouped[d].length, 0)} clip(s) on Mondays 7–8pm UTC`}
-      </p>
+        <div className="flex items-end justify-between mb-8 border-b border-[#222]">
+          <p className="text-[#aaa] pb-2">
+            {days.length === 0
+              ? "No clips found."
+              : `${days.reduce((n, d) => n + grouped[d].length, 0)} clip(s) · Mondays${courtLabel ? ` · ${courtLabel}` : ""}${timeLabel ? ` · ${timeLabel}` : ""}`}
+          </p>
+          <div className="flex gap-1">
+            <TimeBadge initialTime={time} />
+            <CourtBadge initialCourt={court} />
+          </div>
+        </div>
 
-      {days.length === 0 && lastThreeMondays.every((m) => !grouped[m]) ? (
-        <p className="text-[#aaa]">(no results)</p>
-      ) : (
         <>
           {lastThreeMondays.map((monday) =>
             grouped[monday] ? (
@@ -108,7 +133,6 @@ export default async function Page() {
               <DayCard key={day} day={day} clips={grouped[day]} savedMap={savedMap} />
             ))}
         </>
-      )}
       </div>
     </main>
   );

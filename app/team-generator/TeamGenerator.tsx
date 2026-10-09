@@ -525,11 +525,11 @@ export default function TeamGenerator({ initialPlayers, initialActiveGame }: { i
                   onClick={() => moveToB(p)}
                   className="group flex gap-2 items-center justify-end px-3 py-2 rounded bg-[#1a1a1a] cursor-pointer hover:bg-[#1a2a3f] transition-colors"
                 >
-                  <span className="hidden md:block flex-1 text-xs text-[#444] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity text-right">Switch team →</span>
+                  <span className="hidden md:block flex-1 text-xs text-[#666] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity text-right">Switch team →</span>
                   <span className="text-sm text-[#eee] text-right break-words">{p.name}</span>
                   <button
                     onClick={(e) => { e.stopPropagation(); removeFromTeam(p); }}
-                    className="text-[#444] hover:text-[#e05555] text-xs transition-colors cursor-pointer opacity-0 group-hover:opacity-100 shrink-0"
+                    className="text-[#e05555] hover:text-[#ff7070] text-xs transition-colors cursor-pointer md:opacity-0 md:group-hover:opacity-100 shrink-0"
                   >✕</button>
                 </li>
               ))}
@@ -543,10 +543,10 @@ export default function TeamGenerator({ initialPlayers, initialActiveGame }: { i
                 >
                   <button
                     onClick={(e) => { e.stopPropagation(); removeFromTeam(p); }}
-                    className="text-[#444] hover:text-[#e05555] text-xs transition-colors cursor-pointer opacity-0 group-hover:opacity-100 shrink-0"
+                    className="text-[#e05555] hover:text-[#ff7070] text-xs transition-colors cursor-pointer md:opacity-0 md:group-hover:opacity-100 shrink-0"
                   >✕</button>
                   <span className="text-sm text-[#eee] min-w-max text-left">{p.name}</span>
-                  <span className="hidden md:block flex-1 text-xs text-[#444] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity text-left">← Switch team</span>
+                  <span className="hidden md:block flex-1 text-xs text-[#666] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity text-left">← Switch team</span>
                 </li>
               ))}
             </ul>
@@ -592,18 +592,18 @@ export default function TeamGenerator({ initialPlayers, initialActiveGame }: { i
             <ul className="p-3 flex flex-col gap-1">
               {teamA.map((p) => (
                 <li key={p.id} onClick={() => moveToB(p)} className="group flex gap-2 items-center justify-end px-3 py-2 rounded bg-[#1a1a1a] cursor-pointer hover:bg-[#1a2a3f] transition-colors">
-                  <span className="hidden md:block flex-1 text-xs text-[#444] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity text-right">Switch team →</span>
+                  <span className="hidden md:block flex-1 text-xs text-[#666] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity text-right">Switch team →</span>
                   <span className="text-sm text-[#eee] text-right break-words">{p.name}</span>
-                  <button onClick={(e) => { e.stopPropagation(); removeFromTeam(p); }} className="text-[#444] hover:text-[#e05555] text-xs transition-colors cursor-pointer opacity-0 group-hover:opacity-100 shrink-0">✕</button>
+                  <button onClick={(e) => { e.stopPropagation(); removeFromTeam(p); }} className="text-[#e05555] hover:text-[#ff7070] text-xs transition-colors cursor-pointer md:opacity-0 md:group-hover:opacity-100 shrink-0">✕</button>
                 </li>
               ))}
             </ul>
             <ul className="p-3 flex flex-col gap-1">
               {teamB.map((p) => (
                 <li key={p.id} onClick={() => moveToA(p)} className="group flex gap-2 items-center px-3 py-2 rounded bg-[#1a1a1a] cursor-pointer hover:bg-[#0a2e2d] transition-colors">
-                  <button onClick={(e) => { e.stopPropagation(); removeFromTeam(p); }} className="text-[#444] hover:text-[#e05555] text-xs transition-colors cursor-pointer opacity-0 group-hover:opacity-100 shrink-0">✕</button>
+                  <button onClick={(e) => { e.stopPropagation(); removeFromTeam(p); }} className="text-[#e05555] hover:text-[#ff7070] text-xs transition-colors cursor-pointer md:opacity-0 md:group-hover:opacity-100 shrink-0">✕</button>
                   <span className="text-sm text-[#eee] min-w-max text-left">{p.name}</span>
-                  <span className="hidden md:block flex-1 text-xs text-[#444] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity text-left">← Switch team</span>
+                  <span className="hidden md:block flex-1 text-xs text-[#666] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity text-left">← Switch team</span>
                 </li>
               ))}
             </ul>
