@@ -1,5 +1,5 @@
 import { list } from "@vercel/blob";
-import { kv } from "@vercel/kv";
+import { sql } from "@/lib/db";
 import DayCard from "./DayCard";
 import CourtBadge from "../team-generator/CourtBadge";
 import TimeBadge from "./TimeBadge";
@@ -84,10 +84,9 @@ function getLastThreeMondays(): string[] {
 }
 
 export default async function Page() {
-  const [court, time] = await Promise.all([
-    kv.get("court").then((c) => (c != null ? String(c) : "")),
-    kv.get("cliptime").then((t) => (t != null ? String(t) : "")),
-  ]);
+  const [config] = await sql`SELECT court, cliptime FROM camera_config WHERE id = 1`;
+  const court = config?.court ?? "";
+  const time = config?.cliptime ?? "";
 
   const [grouped, savedMap] = await Promise.all([getClips(court, time), getSavedMap()]);
   const days = Object.keys(grouped).sort((a, b) => b.localeCompare(a));

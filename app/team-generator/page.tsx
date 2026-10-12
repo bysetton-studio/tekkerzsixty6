@@ -1,4 +1,4 @@
-import { kv } from "@vercel/kv";
+import { sql } from "@/lib/db";
 import TeamGenerator from "./TeamGenerator";
 
 interface Player {
@@ -7,7 +7,7 @@ interface Player {
 }
 
 export default async function TeamGeneratorPage() {
-  const players = await kv.get<Player[]>("players") ?? [];
+  const players = (await sql`SELECT id, name FROM players ORDER BY id`) as Player[];
 
   return (
     <main className="bg-[#111] text-[#eee] p-4 md:p-8">

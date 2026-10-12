@@ -1,4 +1,4 @@
-import { kv } from "@vercel/kv";
+import { sql } from "@/lib/db";
 import TeamGenTabs from "./team-generator/TeamGenTabs";
 
 interface Player {
@@ -17,10 +17,22 @@ interface Game {
 }
 
 export default async function TeamGeneratorPage() {
-  const [players, games] = await Promise.all([
-    kv.get<Player[]>("players").then((p) => p ?? []),
-    kv.get<Game[]>("games").then((g) => g ?? []),
+  const [playerRows, gameRows] = await Promise.all([
+    sql`SELECT id, name FROM players ORDER BY id`,
+    sql`SELECT * FROM games ORDER BY created_at DESC`,
   ]);
+
+  const players = playerRows as Player[];
+  const games: Game[] = gameRows.map((r) => ({
+    id: r.id as string,
+    createdAt: r.created_at as string,
+    status: r.status as "pending" | "completed",
+    teamA: r.team_a as Player[],
+    teamB: r.team_b as Player[],
+    scoreA: r.score_a as number | null,
+    scoreB: r.score_b as number | null,
+  }));
+
   const pendingGame = games.find((g) => g.status === "pending") ?? null;
 
   return (
