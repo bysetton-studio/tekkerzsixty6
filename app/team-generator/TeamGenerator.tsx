@@ -617,7 +617,7 @@ export default function TeamGenerator({ initialPlayers, initialActiveGame }: { i
           <div className="flex items-center justify-between px-4 py-2 border-b border-[#1bb1ac40] bg-[#0d3f3e]">
             <span className="text-[#1bb1ac] text-sm font-semibold">Game locked in</span>
             <div className="flex items-center gap-3">
-              <span className="text-[#555] text-xs">{new Date(activeGame.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+              <span className="text-[#555] text-xs" suppressHydrationWarning>{new Date(activeGame.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
               <button
                 onClick={handleShare}
                 className="text-xs px-2 py-0.5 rounded bg-[#1bb1ac26] text-[#1bb1ac] hover:bg-[#1bb1ac40] transition-colors"
